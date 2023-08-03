@@ -26,7 +26,7 @@ CORS_ALLOW_ALL_ORIGINS = True
 
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:3000',
-    'https://dine-eazy.onrender.com',
+    'https://restaurant-booking-frontend-ten.vercel.app/',
 ]
 
 
