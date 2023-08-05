@@ -11,7 +11,7 @@ class RoomSerializer(serializers.ModelSerializer):
 
 class MessageSerializer(serializers.ModelSerializer):
     class Meta:
-        author = UsersSerializer(source='author_id', read_only=True)
+        author = UsersSerializer(source='author', read_only=True)
         model = Message
-        fields = ('id', 'author_id', 'content', 'timestamp')
+        fields = ('id', 'author', 'content', 'timestamp')
         
