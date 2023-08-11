@@ -105,7 +105,8 @@ class VerifyOTP(APIView):
                 'data': {},
             })
             
-            return HttpResponseRedirect('http://localhost:3000/login')  
+            # return HttpResponseRedirect('https://dine-eazy.vercel.app/user/')  
+            return HttpResponseRedirect('http://localhost:8000/user/')  
             
         
         except AppUser.DoesNotExist:
@@ -135,20 +136,11 @@ class UserLogin(APIView):
             email=serializer.validated_data['email'],
             password=serializer.validated_data['password']
         )
-        if user is None:
-            raise AuthenticationFailed('Invalid email or password.')
+        if user is None or not user.is_verified or not user.is_active:
+            raise AuthenticationFailed('Invalid credentials')
 
         # User authentication successful
         login(request, user)
-        
-        # access_token = AccessToken.for_user(user)
-        # access_token['email'] = user.email
-        # access_token['is_active'] = user.is_active
-        # access_token['is_superuser'] = user.is_superuser
-        # access_token['is_res_admin'] = user.is_res_admin
-        # access_token = str(access_token)
-        # refresh_token = str(RefreshToken.for_user(user))
-        
         
         payload = {
             'name': user.name,
@@ -158,6 +150,7 @@ class UserLogin(APIView):
             'is_active': user.is_active,
             'is_verified': user.is_verified,
             'is_res_admin': user.is_res_admin,
+            'is_superuser': user.is_superuser,
             'exp': datetime.utcnow() + timedelta(minutes=15),
 
                 }  
@@ -168,32 +161,24 @@ class UserLogin(APIView):
         decoded_token = jwt.decode(access_token, settings.SECRET_KEY, algorithms=['HS256'])
 
         
-        print("reached")
-           
-        
         return Response({
             "access_token": access_token,
             # "refresh_token": refresh_token,
             "email": user.email,
             "is_res_admin": user.is_res_admin,
-            "id":user.id
+            "id":user.id,
+            "is_superuser":user.is_superuser,
+            
             
         })            
 
 
 
 
-class UserLogout(APIView):
-    # permission_classes=(IsAuthenticated,)
-    
+class UserLogout(APIView):  
     def post(self,request):
         try:
-            
-            refresh_token=request.data["refresh_token"]
-            print("refresh_token",refresh_token)
-            token=RefreshToken(refresh_token)
-            print(token)
-            token.blacklist()
+            logout(request)
             return Response({'message': 'User logged out'},status=status.HTTP_205_RESET_CONTENT)
         except Exception as e:
             return Response(status=status.HTTP_400_BAD_REQUEST)
@@ -203,114 +188,57 @@ import os
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
 
+# YOUR_DOMAIN = 'http://localhost:3000'  
 
-YOUR_DOMAIN = 'http://localhost:3000'  
+YOUR_DOMAIN = 'https://dine-eazy.vercel.app/' 
 
-# class StripeCheckoutView(APIView):
-#     def post(self, request):
-#         try:
-            
-#                 booking_id = request.POST.get('bookingId')
-#                 product = stripe.Product.create(
-#                 name='Restaurant Menu',
-                
-#             )
-            
-#                 price = stripe.Price.create(
-#                 unit_amount=int(request.POST.get('price')) * 100,
-#                 currency='inr',
-#                 product_data={
-#                     'name': 'Restaurant Menu',  
-#                 }
-                
-#             )
 
-#                 print("hey stripeeeeeeeeeeeeeee")
-#                 checkout_session = stripe.checkout.Session.create(
-#                 payment_method_types=['card'],
-#                 mode='payment',
-#                 line_items=[
-#                     {
-#                         'price': price.id,
-#                         'quantity': 1,
-#                     },
-#                 ],
-                
-#                 # success_url=YOUR_DOMAIN + '/?success=true&session_id={CHECKOUT_SESSION_ID}',
-#                 success_url=YOUR_DOMAIN + '/success',
-#                 cancel_url=YOUR_DOMAIN + '/?canceled=true',
-#                )
-          
-#                 payment = Payment.objects.create(
-#                 booking_id=booking_id,
-#                 amount=request.POST.get('price'),
-#                 user=request.POST.get('userId'), 
-#             )
-       
-#                 # payment_serializer = PaymentSerializer(payment)
-#                 print('checkout session url',checkout_session.url,'mmmmmmmmmmmmmmmmmm')
 
-# #                 return Response({
-# #                 'url': checkout_session.url,
-# # })
-                
-#                 # return Response({checkout_session.url})  
-#                 return redirect(checkout_session.url , code=303)
-                
-#         except stripe.error.StripeError as e:
-#             print('stripe error', e)
-#             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-@api_view(['POST'])
-def StripeCheckoutView(request):
-    # def post(self, request):
+class StripeCheckoutView(APIView):
+    def post(self, request, *args, **kwargs):
+      
         try:
             booking_id = request.GET.get('booking_id')  # Retrieve booking_id from query parameters
-            user_id = request.POST.get('userId')  # Retrieve userId from query parameters
-            print(user_id,"user................")
-
-            product = stripe.Product.create(name='Restaurant Menu')
+            user_id = request.POST.get('userId')  # Retrieve userId from query parameters             email = request.POST.get('email') 
+            product=stripe.Product.create(name='Restaurant Menu')
             booking=Booking.objects.get(pk=booking_id)
             user=AppUser.objects.get(pk=user_id)
-
-            price = stripe.Price.create(
-                unit_amount=int(request.POST.get('price')) * 100,  # Store amount in cents
-                currency='INR',
-                product_data={
-                    'name': 'Restaurant Menu', 
-                }
-            )
-            print('stripe price ', price)
-
             checkout_session = stripe.checkout.Session.create(
-                payment_method_types=['card'],
-                mode='payment',
                 line_items=[
                     {
-                        'price': price.id,
+                        # Provide the exact Price ID (for example, pr_1234) of the product you want to sell
+                        'price_data': {
+                            'currency':'INR',
+                             'unit_amount':int(request.POST.get('price')) * 100, 
+                             'product_data':{
+                                 'name':product.name,
+                                
+
+                             }
+                        },
                         'quantity': 1,
                     },
                 ],
-                success_url=YOUR_DOMAIN + '/success',
-                cancel_url=YOUR_DOMAIN + '/?canceled=true',
+                metadata={
+                    "product_id":product.id
+                },
+                mode='payment',
+                payment_method_types=['card'],
+                 success_url=YOUR_DOMAIN + '/success',
+                 cancel_url=YOUR_DOMAIN + '/?canceled=true',
             )
-            print(" stripe checkout", checkout_session)
-
-            # Create the Payment object
             payment = Payment.objects.create(
-                booking=booking,
-                amount=int(request.POST.get('price')) * 100,  # Store amount in cents
-                user=user,
+                 booking=booking,
+                 amount=int(request.POST.get('price')),  # Store amount in cents
+                 user=user,
             )
-
-            return redirect(checkout_session.url, code=303)
-
-        except stripe.error.StripeError as e:
-            print('stripe error', e)
-            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return redirect(checkout_session.url)
         except Exception as e:
-            # Handle other exceptions, e.g., if the booking or user does not exist
-            print('error', e)
-            return Response({'error': 'Invalid booking or user'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'msg':'something went wrong while creating stripe session','error':str(e)}, status=500)
+        
+
+
+
 
         
         
@@ -322,52 +250,54 @@ class WebHook(APIView):
         payload = request.body
         sig_header = request.META.get('HTTP_STRIPE_SIGNATURE')
         endpoint_secret = "whsec_5cc0040e9f1e0201b9d997be65fffc49f2066bddcd8b9bee1e6d496b51d300f1"  
-        
-        
-        
-
+          
         try:
             event = stripe.Webhook.construct_event(payload, sig_header, endpoint_secret)
         except ValueError as e:
-            # Invalid payload
+          
             return JsonResponse({'error': 'Invalid payload'}, status=400)
         except stripe.error.SignatureVerificationError as e:
-            # Invalid signature
+           
             return JsonResponse({'error': 'Invalid signature'}, status=400)
 
-        # Handle the event
+        
         if event['type'] == 'payment_intent.succeeded':
             payment_intent = event['data']['object']
             print("--------payment_intent ---------->", payment_intent)
-            # Process the payment intent and update your application's data accordingly
+            
 
         elif event['type'] == 'checkout.session.completed':
             session = event['data']['object']
             print("--------checkout_session ---------->", session)
-            # Process the Checkout Session and update your application's data accordingly
+            
 
         elif event['type'] == 'payment_method.attached':
             payment_method = event['data']['object']
             print("--------payment_method ---------->", payment_method)
-            # Handle the attached payment method event
-
-        # ... handle other event types
+            
 
         return JsonResponse({'success': True})
-
+def send_booking_email(email,booking):
+        subject = 'Dine Eazy-Booking'
+        message = f'Your booking for {booking.date} at {booking.time} in {booking.restaurantId.restaurant_name} has been booked.'
+        email_from=settings.EMAIL_HOST
+        recipient_list = [email]
+        send_mail(subject,message,email_from,recipient_list)    
         
 class BlockUser(APIView):
     def put(self, request, user_id):
         user = AppUser.objects.get(id=user_id)
-        print(user)
+
         user.is_active = False
         user.save()
+        print(user)
         return Response({'message': 'User blocked successfully'}, status=status.HTTP_200_OK)
 
 
 class UnblockUser(APIView):
     def put(self, request, user_id):
         user =  AppUser.objects.get(id=user_id)
+      
         user.is_active = True
         user.save()
         return Response({'message': 'User unblocked successfully'}, status=status.HTTP_200_OK)
@@ -382,8 +312,9 @@ class UserView(APIView):
 
 class UserListView(APIView):
     def get(self, request, *args, **kwargs):
-        users = AppUser.objects.all()
-        serializer = UserSerializer(users, many=True)
+        users = AppUser.objects.filter(is_user=True)
+  
+        serializer = UsersSerializer(users, many=True)
         return Response(serializer.data)
     
 

@@ -55,7 +55,7 @@ class VerifyAccountSerializer(serializers.Serializer):
 class UsersSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserModel
-        fields = ['id','email','name','mobile','password']    
+        fields = ['id','email','name','mobile','is_user','is_active']    
 
 
 

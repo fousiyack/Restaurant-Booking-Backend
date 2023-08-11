@@ -37,6 +37,7 @@ class AppUser(AbstractBaseUser, PermissionsMixin):
     is_verified=models.BooleanField(default=False,null=True,blank=True)
     is_user= models.BooleanField(default=False)
     otp=models.CharField( max_length=6,null=True,blank=True)
+   
     USERNAME_FIELD = 'email'
 
 

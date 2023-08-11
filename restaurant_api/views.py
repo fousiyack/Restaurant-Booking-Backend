@@ -17,6 +17,7 @@ from django.views.decorators.http import require_http_methods
 from django.core.mail import send_mail
 from django.conf import settings
 from  restaurant_api.models import Booking,Complaint
+from rest_framework.parsers import MultiPartParser
 
 
 from rest_framework import generics
@@ -73,7 +74,7 @@ class RestaurantListView(APIView):
     
 class RestaurantListViewall(APIView):
     def get(self, request, *args, **kwargs):
-        restaurants = Restaurant.objects.filter()
+        restaurants = Restaurant.objects.filter().select_related('user')
         serializer = RestaurantSerializer(restaurants, many=True)
         return Response(serializer.data)    
     
@@ -87,7 +88,13 @@ class RestaurantListCuisine(APIView):
     def get(self, request, cuisine_type):
         restaurants = Restaurant.objects.filter(cuisine_type=cuisine_type)
         serializer = RestaurantSerializer(restaurants, many=True)
-        return Response(serializer.data)       
+        return Response(serializer.data)   
+    
+class RestaurantListOwner(APIView):
+    def get(self, request, userId):
+        restaurants = Restaurant.objects.filter(user=userId)
+        serializer = RestaurantSerializer(restaurants, many=True)
+        return Response(serializer.data)            
     
 
 
@@ -103,6 +110,7 @@ class RestaurantDetail(APIView):
             return Response({'message': 'Restaurant not found'}, status=status.HTTP_404_NOT_FOUND)
     
     def put(self, request, pk):
+        parser_classes=[MultiPartParser]
         try:
             restaurant = Restaurant.objects.get(pk=pk)
             serializer = RestaurantSerializer(restaurant, data=request.data,partial=True)
@@ -265,7 +273,7 @@ def check_table_availability(request):
 
 class BookingHistory(APIView):
     def get(self, request):
-        bookings = Booking.objects.select_related('restaurantId', 'tableId', 'timeId', 'user')
+        bookings = Booking.objects.select_related('restaurantId', 'tableId', 'timeId', 'user').order_by('-created_at')
         serializer = BookingHistorySerializer(bookings, many=True)
         print(serializer.data)
         return Response(serializer.data)
@@ -294,6 +302,8 @@ def send_booking_canceled_email(email,instance):
         email_from=settings.EMAIL_HOST
         recipient_list = [instance.user.email]
         send_mail(subject,message,email_from,recipient_list)   
+        
+       
     
 @api_view(['PUT']) 
 def cancel_booking(request, bookingId):
@@ -304,7 +314,7 @@ def cancel_booking(request, bookingId):
         booking.save()
         
         #DO REFUND....................................
-        print(booking.user.email,"emaillllllllllllllllllllllllllllllll")
+     
         send_booking_canceled_email(booking.user.email,booking)
         
         return JsonResponse({'message': 'Booking canceled successfully.'}, status=200)
@@ -321,7 +331,7 @@ class TotalBookingsCount(APIView):
     
 @api_view(['GET'])  
 def RestBookingHistory(request,restaurantId):
-        bookings = Booking.objects.filter(restaurantId=restaurantId).select_related( 'tableId', 'timeId', 'user')
+        bookings = Booking.objects.filter(restaurantId=restaurantId).select_related( 'tableId', 'timeId', 'user').order_by('-created_at')
        
         print(bookings)
         print('-----------------------------------------')

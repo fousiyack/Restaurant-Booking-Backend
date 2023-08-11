@@ -25,6 +25,8 @@ urlpatterns = [
 
     path('payment/', create_checkout_session,name='payment'),   
     
+    path('RestListOwner/<int:userId>/', RestaurantListOwner.as_view(), name='RestListOwner'),
+    
     path('booking-history/', BookingHistory.as_view(), name='booking_history'), 
     path('restBooking-history/<int:restaurantId>/', RestBookingHistory, name='booking_history'), 
     path('UserBooking/<int:userId>/', UserBookingHistory, name='UserBooking'),

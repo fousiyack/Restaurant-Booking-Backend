@@ -8,6 +8,7 @@ from admin_api.serializers import TableSerializer,TimeSlotSerializer
 
 
 class RestaurantSerializer(serializers.ModelSerializer):
+    user=UsersSerializer()
     class Meta:
         model = Restaurant
         fields = '__all__'

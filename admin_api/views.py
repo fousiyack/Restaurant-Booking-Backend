@@ -5,6 +5,10 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from .serializers import *
 from rest_framework.decorators import api_view
 from rest_framework import status
+from django.contrib.auth import get_user_model, login, logout
+from datetime import datetime, timedelta
+from django.conf import settings
+import jwt
 
 class AdminLoginView(APIView):
     def post(self, request):
@@ -12,19 +16,54 @@ class AdminLoginView(APIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.check_admin(serializer.validated_data)
         
-        # Generate JWT tokens
-        refresh = RefreshToken.for_user(user)
-        access_token = str(refresh.access_token)
-        refresh_token = str(refresh)
+        
+        
+        login(request, user)
+        
+        payload = {
+            
+            'email':user.email,
+            'user_id': user.id, 
+          
+            'is_active': user.is_active,
+          
+        
+            'is_superuser': user.is_superuser,
+            'exp': datetime.utcnow() + timedelta(minutes=15),
 
-        # Serialize admin details
-        admin_serializer = AdminSerializer(user)
+                }  
+        print(payload,"payload heree")
+        
+        access_token = jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
 
+        decoded_token = jwt.decode(access_token, settings.SECRET_KEY, algorithms=['HS256'])
+
+        
         return Response({
-            'access_token': access_token,
-            'refresh_token': refresh_token,
-            'admin': admin_serializer.data
-        })
+            "access_token": access_token,
+      
+            "email": user.email,
+         
+            "id":user.id,
+            "is_superuser":user.is_superuser,
+            
+            
+        })            
+
+        
+        # Generate JWT tokens
+        # refresh = RefreshToken.for_user(user)
+        # access_token = str(refresh.access_token)
+        # refresh_token = str(refresh)
+
+        # # Serialize admin details
+        # admin_serializer = AdminSerializer(user)
+
+        # return Response({
+        #     'access_token': access_token,
+        #     'refresh_token': refresh_token,
+        #     'admin': admin_serializer.data
+        # })
         
         
 # class UserLogin(APIView):
@@ -95,7 +134,9 @@ def get_city(request, id):
     try:
         city_obj = City.objects.get(id=id)
         serializer = CitySerializer(city_obj)
-        return Response({'status': 200, 'payload': serializer.data, 'message': 'City details retrieved'})
+        
+        # return Response({'status': 200, 'data': serializer.data, 'message': 'City details retrieved'})
+        return Response(serializer.data)
 
     except City.DoesNotExist:
         return Response({'status': 404, 'message': 'City not found'})
@@ -108,7 +149,8 @@ def delete_city(request,id):
     try:
         city_obj=City.objects.get(id=id)  
         city_obj.delete()
-        return Response({'status':200,'message':'deleted'})
+        # return Response({'status':200,'message':'deleted'})
+        return Response(status=status.HTTP_204_NO_CONTENT) 
 
     except Exception as e:
        return Response({'status':403,'message':'invalid id'})    

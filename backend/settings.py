@@ -26,7 +26,9 @@ CORS_ALLOW_ALL_ORIGINS = True
 
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:3000',
-    'https://restaurant-booking-frontend-ten.vercel.app',
+    # 'https://restaurant-booking-frontend-ten.vercel.app',
+    'https://dine-eazy.vercel.app'
+    
 ]
 
 
@@ -181,26 +183,49 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.AllowAny',
     ),
 }
-# STRIPE_SECRET_KEY='sk_test_tR3PYbcVNZZ796tH88S4VQ2u'
-# STRIPE_SECRET_KEY='sk_test_51NSzh3SDJyz85wUkLBFeckRO9t412hqCmvq51zOy7KUCjqYGvXMjavOKDhAzF9DFZi7uyy4vwnkYqRNxp9XE5y2z00If07bIgQ'
 
-STRIPE_SECRET_KEY='sk_test_51NXgQsSCyVsYvgIHxdAf6qcCP29fOQSC9SrVRlsrOO4dpnq9a0ShTuwkUS1m0nZVKA8P75CkkKkiQ03UHrdxURtE00AMr5YDX6'
-STRIPE_PUBLISHABLE_KEY = 'pk_test_51NXgQsSCyVsYvgIHKQTU5wWDO1KjgOpAaUbnKv2nPcQnxecjXGsqMQY9hhWY0cphBjQVDOIip07tVpgQmRTpTkZL00zVXQjKp2'
 
-STRIPE_WEBHOOK_SECRET='whsec_f2c01980ce49821659f913a878498b0ec28627129c54294beb3b0f2e9013a5e1'
  
 
 SIMPLE_JWT = {
-    'AUTH_HEADER_TYPES': ('JWT',),
+    # 'AUTH_HEADER_TYPES': ('JWT',),
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=5),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=40),
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
+    "UPDATE_LAST_LOGIN": False,
+
+    "ALGORITHM": "HS256",
+    "SIGNING_KEY": SECRET_KEY,
+    "VERIFYING_KEY": "",
+    "AUDIENCE": None,
+    "ISSUER": None,
+    "JSON_ENCODER": None,
+    "JWK_URL": None,
+    "LEEWAY": 0,
+
+    "AUTH_HEADER_TYPES": ("Bearer",),
+    "AUTH_HEADER_NAME": "HTTP_AUTHORIZATION",
+    "USER_ID_FIELD": "id",
+    "USER_ID_CLAIM": "user_id",
+    "USER_AUTHENTICATION_RULE": "rest_framework_simplejwt.authentication.default_user_authentication_rule",
+
+    "AUTH_TOKEN_CLASSES": ("rest_framework_simplejwt.tokens.AccessToken",),
+    "TOKEN_TYPE_CLAIM": "token_type",
+    "TOKEN_USER_CLASS": "rest_framework_simplejwt.models.TokenUser",
+
+    "JTI_CLAIM": "jti",
+
+    "SLIDING_TOKEN_REFRESH_EXP_CLAIM": "refresh_exp",
+    "SLIDING_TOKEN_LIFETIME": timedelta(minutes=5),
+    "SLIDING_TOKEN_REFRESH_LIFETIME": timedelta(days=1),
 }
 
 
-# SIMPLE_JWT = {
-#     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=10),
-#     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
-#     'ROTATE_REFRESH_TOKENS': True,
-#     'BLACKLIST_AFTER_ROTATION': True
-# }
+
+STRIPE_SECRET_KEY='sk_test_51NXgQsSCyVsYvgIHxdAf6qcCP29fOQSC9SrVRlsrOO4dpnq9a0ShTuwkUS1m0nZVKA8P75CkkKkiQ03UHrdxURtE00AMr5YDX6'
+STRIPE_PUBLISHABLE_KEY = 'pk_test_51NXgQsSCyVsYvgIHKQTU5wWDO1KjgOpAaUbnKv2nPcQnxecjXGsqMQY9hhWY0cphBjQVDOIip07tVpgQmRTpTkZL00zVXQjKp2'
+STRIPE_WEBHOOK_SECRET='whsec_f2c01980ce49821659f913a878498b0ec28627129c54294beb3b0f2e9013a5e1'
 
 # TWILIO_ACCOUNT_SID = 'ACb890b2d828304ad1d52e615be9d000b7'
 # TWILIO_AUTH_TOKEN = '88ec71f012ac26a558769555fcd164dd'
